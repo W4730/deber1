@@ -29,6 +29,34 @@ export function VolumeSlider() {
   )
 }
 
+type Theme = 'light' | 'dark'
+
+export function initTheme() {
+  let saved: string | null = null
+  try {
+    saved = localStorage.getItem('theme')
+  } catch {}
+  const theme = saved ?? (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
+  document.documentElement.dataset.theme = theme
+}
+
+export function ThemeToggle() {
+  const [theme, setTheme] = useState(document.documentElement.dataset.theme as Theme)
+  const toggle = () => {
+    const next = theme === 'dark' ? 'light' : 'dark'
+    document.documentElement.dataset.theme = next
+    try {
+      localStorage.setItem('theme', next)
+    } catch {}
+    setTheme(next)
+  }
+  return (
+    <button onClick={toggle} aria-label={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}>
+      {theme === 'dark' ? '☀️' : '🌙'}
+    </button>
+  )
+}
+
 export default function Menu({ loading, error, onStart, onCredits }: Props) {
   return (
     <div className="screen">
@@ -39,7 +67,10 @@ export default function Menu({ loading, error, onStart, onCredits }: Props) {
       </button>
       <button onClick={onCredits}>Créditos</button>
       {error && <p className="error">Error: {error}</p>}
-      <VolumeSlider />
+      <div className="row">
+        <VolumeSlider />
+        <ThemeToggle />
+      </div>
     </div>
   )
 }

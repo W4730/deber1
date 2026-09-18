@@ -32,7 +32,7 @@ export default function Editor({ ball, onSave, onDelete, onCancel }: Props) {
   return (
     <div className="screen">
       <h1>{ball ? 'Editar pelota' : 'Nueva pelota'}</h1>
-      <div className="preview" style={{ background: rgb(form) }} />
+      <div className="preview" style={{ backgroundColor: rgb(form) }} />
       <input
         className="name"
         placeholder="Nombre"

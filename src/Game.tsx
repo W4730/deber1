@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { rgb, type Ball } from './types'
-import { VolumeSlider } from './Menu'
+import { VolumeSlider, ThemeToggle } from './Menu'
+import { plop } from './music'
 
 interface Props {
   balls: Ball[]
@@ -50,22 +51,59 @@ export default function Game({ balls, onEdit, onMenu }: Props) {
       const w = (canvas.width = canvas.clientWidth)
       const h = (canvas.height = canvas.clientHeight)
 
-      for (const b of ballsRef.current) {
-        const p = bodyOf(b)
-        if (grabbed?.id !== b.id) {
-          p.vy += GRAVITY * dt
-          p.vx *= FRICTION
-          p.x += p.vx * dt
-          p.y += p.vy * dt
+      const list = ballsRef.current.map((b) => ({ b, p: bodyOf(b), held: grabbed?.id === b.id }))
+
+      for (const { p, held } of list) {
+        if (held) {
+          p.vx *= 0.8 // dragged velocity fades when the mouse stops
+          p.vy *= 0.8
+          continue
         }
-        if (p.x < R) (p.x = R), (p.vx = Math.abs(p.vx) * BOUNCE)
-        if (p.x > w - R) (p.x = w - R), (p.vx = -Math.abs(p.vx) * BOUNCE)
-        if (p.y < R) (p.y = R), (p.vy = Math.abs(p.vy) * BOUNCE)
-        if (p.y > h - R) (p.y = h - R), (p.vy = -Math.abs(p.vy) * BOUNCE)
+        p.vy += GRAVITY * dt
+        p.vx *= FRICTION
+        p.x += p.vx * dt
+        p.y += p.vy * dt
+      }
+
+      // ponytail: O(n²) pair check, fine for dozens of balls; spatial grid if hundreds.
+      for (let i = 0; i < list.length; i++) {
+        for (let j = i + 1; j < list.length; j++) {
+          const a = list[i], c = list[j]
+          const dx = c.p.x - a.p.x, dy = c.p.y - a.p.y
+          const dist = Math.hypot(dx, dy)
+          if (dist >= 2 * R || dist === 0) continue
+          const nx = dx / dist, ny = dy / dist
+          // The held ball acts like a wall: infinite mass.
+          const ia = a.held ? 0 : 1, ic = c.held ? 0 : 1
+          if (ia + ic === 0) continue
+          const push = (2 * R - dist) / (ia + ic)
+          a.p.x -= nx * push * ia; a.p.y -= ny * push * ia
+          c.p.x += nx * push * ic; c.p.y += ny * push * ic
+          const vn = (c.p.vx - a.p.vx) * nx + (c.p.vy - a.p.vy) * ny
+          if (vn >= 0) continue
+          const imp = (-(1 + BOUNCE) * vn) / (ia + ic)
+          a.p.vx -= imp * nx * ia; a.p.vy -= imp * ny * ia
+          c.p.vx += imp * nx * ic; c.p.vy += imp * ny * ic
+          plop(-vn)
+        }
+      }
+
+      for (const { b, p } of list) {
+        if (p.x < R) plop(-p.vx), (p.x = R), (p.vx = Math.abs(p.vx) * BOUNCE)
+        if (p.x > w - R) plop(p.vx), (p.x = w - R), (p.vx = -Math.abs(p.vx) * BOUNCE)
+        if (p.y < R) plop(-p.vy), (p.y = R), (p.vy = Math.abs(p.vy) * BOUNCE)
+        if (p.y > h - R) plop(p.vy), (p.y = h - R), (p.vy = -Math.abs(p.vy) * BOUNCE)
 
         ctx.beginPath()
         ctx.arc(p.x, p.y, R, 0, Math.PI * 2)
         ctx.fillStyle = rgb(b)
+        ctx.fill()
+        // Plastic look: soft white highlight up-left.
+        const hx = p.x - R * 0.35, hy = p.y - R * 0.4
+        const shine = ctx.createRadialGradient(hx, hy, 0, hx, hy, R * 0.55)
+        shine.addColorStop(0, 'rgba(255,255,255,0.85)')
+        shine.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.fillStyle = shine
         ctx.fill()
       }
       frame = requestAnimationFrame(tick)
@@ -86,9 +124,14 @@ export default function Game({ balls, onEdit, onMenu }: Props) {
     const move = (e: PointerEvent) => {
       if (!grabbed) return
       const p = bodies.get(grabbed.id)!
-      p.x = e.offsetX + grabbed.dx
-      p.y = e.offsetY + grabbed.dy
-      p.vx = p.vy = 0
+      const x = e.offsetX + grabbed.dx
+      const y = e.offsetY + grabbed.dy
+      const prev = grabbed.trail[grabbed.trail.length - 1]
+      const dt = prev ? (e.timeStamp - prev.t) / 1000 : 0
+      // Keep a velocity while dragging so the held ball can smack others.
+      if (dt > 0) (p.vx = (x - p.x) / dt), (p.vy = (y - p.y) / dt)
+      p.x = x
+      p.y = y
       grabbed.trail.push({ x: p.x, y: p.y, t: e.timeStamp })
       grabbed.trail = grabbed.trail.filter((s) => e.timeStamp - s.t < 100)
     }
@@ -130,6 +173,7 @@ export default function Game({ balls, onEdit, onMenu }: Props) {
         ))}
         <button onClick={() => onEdit(null)} aria-label="Agregar pelota">+</button>
         <VolumeSlider />
+        <ThemeToggle />
       </div>
     </div>
   )

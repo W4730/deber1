@@ -61,3 +61,21 @@ export function setVolume(v: number) {
 }
 
 export const getVolume = () => volume
+
+let lastPlop = 0
+/** Soft plastic "plop" for an impact; speed in px/s. Quiet taps are skipped. */
+export function plop(speed: number) {
+  if (!ctx || speed < 250 || ctx.currentTime - lastPlop < 0.04) return
+  lastPlop = ctx.currentTime
+  const t = ctx.currentTime
+  const o = ctx.createOscillator()
+  const g = ctx.createGain()
+  o.type = 'sine'
+  o.frequency.setValueAtTime(420 + Math.random() * 180, t)
+  o.frequency.exponentialRampToValueAtTime(160, t + 0.12)
+  g.gain.setValueAtTime(Math.min(speed / 2500, 1) * 0.5, t)
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.15)
+  o.connect(g).connect(master)
+  o.start(t)
+  o.stop(t + 0.15)
+}
