@@ -4,6 +4,8 @@ Minijuego web: crea pelotas con nombre y color RGB, agárralas con el mouse, lá
 
 **Stack:** React + TypeScript + Vite · Supabase (PostgreSQL) · Vercel
 
+MattMurdock26032004
+
 ## Flujo
 
 1. **Menú** — título, botones *Empezar* y *Créditos*, slider de volumen.
@@ -33,16 +35,16 @@ Requisitos: Node 20+ y una cuenta de [Supabase](https://supabase.com).
 
    ```bash
    git clone <url-del-repo>
-   cd bounce-a-bol
+   cd <nombre-del-repo>
    npm install
    cp .env.example .env
    ```
 
-3. Llena `.env` con los datos de *Project Settings → API* de Supabase:
+3. Llena `.env` con los datos de *Project Settings → API Keys* de Supabase:
 
    ```
    VITE_SUPABASE_URL=https://xxxx.supabase.co
-   VITE_SUPABASE_ANON_KEY=tu-anon-key
+   VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_xxx
    ```
 
 4. `npm run dev` y abre http://localhost:5173
@@ -63,7 +65,7 @@ Cada pelota se guarda como `{ "name": "Bolita", "r": 255, "g": 120, "b": 80 }`.
 ## Despliegue en Vercel
 
 1. Sube el repo a GitHub e impórtalo en [vercel.com/new](https://vercel.com/new) (Vercel detecta Vite solo).
-2. En *Environment Variables* agrega `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
+2. En *Environment Variables* agrega `VITE_SUPABASE_URL` y `VITE_SUPABASE_PUBLISHABLE_KEY`.
 3. Deploy.
 
 ## Flujo de ramas
